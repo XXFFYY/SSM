@@ -392,7 +392,7 @@ public interface EmployeeMapper {
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:context="http://www.springframework.org/schema/context" xmlns:tx="http://www.springframework.org/schema/tx"
-       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd\ http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
 
     <!--扫描组件（除控制层）-->
     <context:component-scan base-package="com.Xie.ssm">
@@ -443,3 +443,289 @@ public interface EmployeeMapper {
 
 </beans>
 ```
+
+---
+
+## 6.测试功能
+
+①创建组件
+
+实体类Employee
+
+```java
+package com.Xie.ssm.pojo;
+
+/**
+ * @date: 2022/8/13 21:45
+ * @author: XieFeiYu
+ * @email: 32096231@qq.com
+ * @Description:
+ */
+public class Employee {
+    
+    private Integer empId;
+    
+    private String empName;
+    
+    private Integer age;
+    
+    private String gender;
+    
+    private String email;
+    
+    public Employee() {
+    }
+    
+    public Employee(Integer empId, String empName, Integer age, String gender, String email) {
+        this.empId = empId;
+        this.empName = empName;
+        this.age = age;
+        this.gender = gender;
+        this.email = email;
+    }
+    
+    public Integer getEmpId() {
+        return empId;
+    }
+    
+    public void setEmpId(Integer empId) {
+        this.empId = empId;
+    }
+    
+    public String getEmpName() {
+        return empName;
+    }
+    
+    public void setEmpName(String empName) {
+        this.empName = empName;
+    }
+    
+    public Integer getAge() {
+        return age;
+    }
+    
+    public void setAge(Integer age) {
+        this.age = age;
+    }
+    
+    public String getGender() {
+        return gender;
+    }
+    
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+    
+    public String getEmail() {
+        return email;
+    }
+    
+    public void setEmail(String email) {
+        this.email = email;
+    }
+    
+    @Override
+    public String toString() {
+        return "Employee{" +
+                "empId=" + empId +
+                ", empName='" + empName + '\'' +
+                ", age=" + age +
+                ", gender='" + gender + '\'' +
+                ", email='" + email + '\'' +
+                '}';
+    }
+}
+```
+
+创建控制层组件EmployeeController
+
+```java
+package com.Xie.ssm.controller;
+
+import com.Xie.ssm.pojo.Employee;
+import com.Xie.ssm.service.EmployeeService;
+import com.github.pagehelper.PageInfo;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+
+import java.util.List;
+
+/**
+ * @date: 2022/8/13 16:49
+ * @author: XieFeiYu
+ * @email: 32096231@qq.com
+ * @Description:
+ * 查询所有的员工信息-->/employee/-->get
+ * 查询员工的分页信息-->/employee/page/1-->get
+ * 根据id查询员工信息-->/employee/{id}-->get
+ * 跳转到添加页面-->/to/add-->get
+ * 添加员工信息-->/employee-->post
+ * 修改员工信息-->/employee-->put
+ * 删除员工信息-->/employee/{id}-->delete
+ */
+
+@Controller
+public class EmployeeController {
+    
+    @Autowired
+    private EmployeeService employeeService;
+    
+    @RequestMapping(value = "/employee/page/{pageNum}", method = RequestMethod.GET)
+    public String getEmployeePage(@PathVariable("pageNum") Integer pageNum, Model model) {
+        //获取员工的分页信息
+        PageInfo<Employee> page = employeeService.getEmployeePage(pageNum);
+        //将分页数据共享到请求域中
+        model.addAttribute("page", page);
+        //跳转到employee_list
+        return "employee_list";
+    }
+    @RequestMapping(value = "/employee", method = RequestMethod.GET)
+    public String getAllEmployee(Model model) {
+        //查询所有的员工信息
+        List<Employee> list = employeeService.getAllEmployee();
+        //将所有的员工信息在请求域中共享
+        model.addAttribute("list", list);
+        //跳转到employee_list.html
+        return "employee_list";
+    }
+    
+}
+```
+
+创建接口EmployeeService
+
+```java
+package com.Xie.ssm.service;
+
+import com.Xie.ssm.pojo.Employee;
+import com.github.pagehelper.PageInfo;
+
+import java.util.List;
+
+/**
+ * @date: 2022/8/13 16:59
+ * @author: XieFeiYu
+ * @email: 32096231@qq.com
+ * @Description:
+ */
+public interface EmployeeService {
+    /**
+     * 查询所有的员工信息
+     * @return
+     */
+    List<Employee> getAllEmployee();
+    
+    /**
+     * 获取员工的分页信息
+     * @param pageNum
+     * @return
+     */
+    PageInfo<Employee> getEmployeePage(Integer pageNum);
+}
+```
+
+创建实现类EmployeeServiceImpl
+
+```java
+package com.Xie.ssm.service.impl;
+
+import com.Xie.ssm.mapper.EmployeeMapper;
+import com.Xie.ssm.pojo.Employee;
+import com.Xie.ssm.service.EmployeeService;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+/**
+ * @date: 2022/8/13 16:59
+ * @author: XieFeiYu
+ * @email: 32096231@qq.com
+ * @Description:
+ */
+@Service
+@Transactional
+public class EmployeeServiceImpl implements EmployeeService {
+    
+    @Autowired
+    private EmployeeMapper employeeMapper;
+    
+    @Override
+    public List<Employee> getAllEmployee() {
+        return employeeMapper.getAllEmployee();
+    }
+    
+    @Override
+    public PageInfo<Employee> getEmployeePage(Integer pageNum) {
+        //开启分页功能
+        PageHelper.startPage(pageNum, 4);
+        //查询所有的员工信息
+        List<Employee> list = employeeMapper.getAllEmployee();
+        //获取分页相关数据
+        PageInfo<Employee> page = new PageInfo<>(list, 5);
+        return page;
+    }
+}
+```
+
+②创建页面
+
+```html
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="UTF-8">
+        <title>员工列表</title>
+        <link rel="stylesheet" th:href="@{/static/css/index_work.css}">
+    </head>
+    <body>
+        
+        <table>
+            <tr>
+                <th colspan="6">员工列表</th>
+            </tr>
+            <tr>
+                <th>流水号</th>
+                <th>员工姓名</th>
+                <th>年龄</th>
+                <th>性别</th>
+                <th>邮箱</th>
+                <th>操作</th>
+            </tr>
+            <tr th:each="employee,status : ${page.list}">
+                <td th:text="${status.count}"></td>
+                <td th:text="${employee.empName}"></td>
+                <td th:text="${employee.age}"></td>
+                <td th:text="${employee.gender}"></td>
+                <td th:text="${employee.email}"></td>
+                <td>
+                    <a href="">删除</a>
+                    <a href="">修改</a>
+                </td>
+                
+            </tr>
+            
+        </table>
+    <div style="text-align: center">
+        <a th:if="${page.hasPreviousPage}" th:href="@{/employee/page/1}">首页</a>
+        <a th:if="${page.hasPreviousPage}" th:href="@{'/employee/page/'+${page.prePage}}">上一页</a>
+        <span th:each="num : ${page.navigatepageNums}">
+            <a th:if="${page.pageNum == num}" style="color: red;" th:href="@{'/employee/page/'+${num}}" th:text="'['+${num}+']'"></a>
+            <a th:if="${page.pageNum != num}" th:href="@{'/employee/page/'+${num}}" th:text="${num}"></a>
+        </span>
+        <a th:if="${page.hasNextPage}" th:href="@{'/employee/page/'+${page.nextPage}}">下一页</a>
+        <a th:if="${page.hasNextPage}" th:href="@{'/employee/page/'+${page.pages}}">末页</a>
+    </div>
+    </body>
+</html>
+```
+
+③访问测试分页功能

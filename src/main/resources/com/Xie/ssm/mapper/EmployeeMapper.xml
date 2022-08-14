@@ -5,4 +5,8 @@
 
 <mapper namespace="com.Xie.ssm.mapper.EmployeeMapper">
 
+    <select id="getAllEmployee" resultType="Employee">
+        select * from t_emp
+    </select>
+
 </mapper>
